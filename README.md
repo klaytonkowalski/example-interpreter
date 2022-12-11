@@ -1,2 +1,3 @@
-# example-go-interpreter
-Example of an scripting language interpreter written in Go.
+# Go Interpreter
+
+Example of a scripting language interpreter written in Go.
