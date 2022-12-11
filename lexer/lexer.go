@@ -1,6 +1,6 @@
 package lexer
 
-import "monkey/token"
+import "example-go-interpreter/token"
 
 type Lexer struct {
 	text         string
@@ -30,21 +30,49 @@ func (lexer_ *Lexer) NextToken() token.Token {
 	lexer_.skipWhitespace()
 	switch lexer_.character {
 	case '=':
-		token_ = newToken(token.Assign, lexer_.character)
+		if lexer_.peekChar() == '=' {
+			character := lexer_.character
+			lexer_.readChar()
+			newString := string(character) + string(lexer_.character)
+			token_.Category = token.IsEqualTo
+			token_.String = newString
+		} else {
+			token_ = newToken(token.Assign, lexer_.character)
+		}
+	case '+':
+		token_ = newToken(token.Plus, lexer_.character)
+	case ',':
+		token_ = newToken(token.Comma, lexer_.character)
 	case ';':
 		token_ = newToken(token.Semicolon, lexer_.character)
 	case '(':
 		token_ = newToken(token.LeftParenthesis, lexer_.character)
 	case ')':
 		token_ = newToken(token.RightParenthesis, lexer_.character)
-	case ',':
-		token_ = newToken(token.Comma, lexer_.character)
-	case '+':
-		token_ = newToken(token.Plus, lexer_.character)
 	case '{':
 		token_ = newToken(token.LeftBrace, lexer_.character)
 	case '}':
 		token_ = newToken(token.RightBrace, lexer_.character)
+	case '-':
+		token_ = newToken(token.Minus, lexer_.character)
+	case '!':
+		if lexer_.peekChar() == '=' {
+			character := lexer_.character
+			lexer_.readChar()
+			newString := string(character) + string(lexer_.character)
+			token_.Category = token.IsNotEqualTo
+			token_.String = newString
+		} else {
+			token_ = newToken(token.Bang, lexer_.character)
+		}
+	case '*':
+		token_ = newToken(token.Asterisk, lexer_.character)
+	case '/':
+		token_ = newToken(token.Slash, lexer_.character)
+	case '<':
+		token_ = newToken(token.LessThan, lexer_.character)
+	case '>':
+		token_ = newToken(token.GreaterThan, lexer_.character)
 	case 0:
 		token_.Category = token.End
 	default:
@@ -96,4 +124,12 @@ func (lexer_ *Lexer) readNumber() string {
 
 func isDigit(character byte) bool {
 	return '0' <= character && character <= '9'
+}
+
+func (lexer_ *Lexer) peekChar() byte {
+	if lexer_.nextPosition >= len(lexer_.text) {
+		return 0
+	} else {
+		return lexer_.text[lexer_.nextPosition]
+	}
 }

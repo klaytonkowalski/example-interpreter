@@ -20,11 +20,29 @@ const (
 	RightBrace       = "RightBrace"
 	Function         = "Function"
 	Let              = "Let"
+	Minus            = "Minus"
+	Bang             = "Bang"
+	Asterisk         = "Asterisk"
+	Slash            = "/"
+	LessThan         = "LessThan"
+	GreaterThan      = "GreaterThan"
+	True             = "True"
+	False            = "False"
+	If               = "If"
+	Else             = "Else"
+	Return           = "Return"
+	IsEqualTo        = "IsEqualTo"
+	IsNotEqualTo     = "IsNotEqualTo"
 )
 
 var keywords = map[string]string{
-	"fn":  Function,
-	"let": Let,
+	"fn":     Function,
+	"let":    Let,
+	"true":   True,
+	"false":  False,
+	"if":     If,
+	"else":   Else,
+	"return": Return,
 }
 
 func LookupIdentifier(identifier string) string {
