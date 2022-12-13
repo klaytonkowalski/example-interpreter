@@ -1,15 +1,23 @@
 package lexer
 
 import (
+	"example-go-interpreter/token"
 	"testing"
 )
 
 func TestNextToken(t *testing.T) {
-	text := `hello 24 = + , ; ( ) { } fn let - ! * / < > true false if else return == !=`
+	text := `let x = 5;`
 	tests := []struct {
 		expectedCategory string
 		expectedString   string
-	}{}
+	}{
+		{token.Let, "let"},
+		{token.Identifier, "x"},
+		{token.Assign, "="},
+		{token.Integer, "5"},
+		{token.Semicolon, ";"},
+		{token.End, ""},
+	}
 	lexer_ := New(text)
 	for i, test := range tests {
 		token_ := lexer_.NextToken()

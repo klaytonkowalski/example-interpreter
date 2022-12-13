@@ -8,12 +8,15 @@ import (
 	"io"
 )
 
-const Prompt = ">> "
+// Prefix to display before any user input.
+const prefix = ">> "
 
+// REPL entry point.
+// Launches the REPL and continuously waits, parses, and outputs.
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 	for {
-		fmt.Fprintf(out, Prompt)
+		fmt.Fprintf(out, prefix)
 		scan := scanner.Scan()
 		if !scan {
 			return

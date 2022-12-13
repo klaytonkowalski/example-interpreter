@@ -1,10 +1,15 @@
 package token
 
+// A token has a category (semantics) and a string (text).
+// It has no knowledge of syntactic correctness and is simply a
+// representation of a chunk of text in a Monkey script.
 type Token struct {
 	Category string
 	String   string
 }
 
+// All possible token categories.
+// This includes every programming construct in Monkey.
 const (
 	Illegal          = "Illegal"
 	End              = "End"
@@ -35,6 +40,9 @@ const (
 	IsNotEqualTo     = "IsNotEqualTo"
 )
 
+// All possible keywords.
+// Tokens with a category of "identifier" store either a keyword or a
+// variable name.
 var keywords = map[string]string{
 	"fn":     Function,
 	"let":    Let,
@@ -45,7 +53,8 @@ var keywords = map[string]string{
 	"return": Return,
 }
 
-func LookupIdentifier(identifier string) string {
+// Check if an identifier is a keyword or a variable name.
+func IsIdentifier(identifier string) string {
 	if token_, ok := keywords[identifier]; ok {
 		return token_
 	}
