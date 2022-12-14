@@ -1,157 +1,176 @@
 package lexer
 
+////////////////////////////////////////////////////////////////////////////////
+// DEPENDENCIES
+////////////////////////////////////////////////////////////////////////////////
+
 import (
 	"example-interpreter/token"
 )
 
-// A lexer steps through text in a Monkey script and transforms each
-// chunk (adjacent non-space characters) into a token with a category
-// and a string.
-// It has no knowledge of syntactic correctness, but
-// does distinguish between a legal and illegal token string by
-// utilizing the "Illegal" token category.
-// The parser is responsible for throwing an error if it reads an
-// "Illegal" token.
+////////////////////////////////////////////////////////////////////////////////
+// STRUCTURES
+////////////////////////////////////////////////////////////////////////////////
+
+// A struct that steps through a script and tokenizes its code.
 type Lexer struct {
-	script       string
-	position     int
+	// A string that is the extracted text from a script.
+	script string
+	// An int that notes the position of the most recently read character.
+	position int
+	// An int that notes the position of the next character.
 	nextPosition int
-	character    byte
+	// A byte that is the most recently read character.
+	character byte
 }
 
-// Creates a new lexer to process the given script.
+////////////////////////////////////////////////////////////////////////////////
+// METHODS
+////////////////////////////////////////////////////////////////////////////////
+
+// A method that reads the next character in a script and advances the lexer by one character.
+func (l *Lexer) readNextCharacter() {
+	if l.nextPosition >= len(l.script) {
+		l.character = 0
+	} else {
+		l.character = l.script[l.nextPosition]
+	}
+	l.position = l.nextPosition
+	l.nextPosition += 1
+}
+
+// A method that creates the next token in a script.
+// Returns the token.
+func (l *Lexer) GetNextToken() token.Token {
+	var tok token.Token
+	l.readWhitespace()
+	switch l.character {
+	case '=':
+		if l.peekNextCharacter() == '=' {
+			character := l.character
+			l.readNextCharacter()
+			newCode := string(character) + string(l.character)
+			tok.Category = token.IsEqualTo
+			tok.Code = newCode
+		} else {
+			tok = createNewToken(token.Equals, l.character)
+		}
+	case '+':
+		tok = createNewToken(token.Plus, l.character)
+	case ',':
+		tok = createNewToken(token.Comma, l.character)
+	case ';':
+		tok = createNewToken(token.Semicolon, l.character)
+	case '(':
+		tok = createNewToken(token.LeftParenthesis, l.character)
+	case ')':
+		tok = createNewToken(token.RightParenthesis, l.character)
+	case '{':
+		tok = createNewToken(token.LeftBrace, l.character)
+	case '}':
+		tok = createNewToken(token.RightBrace, l.character)
+	case '-':
+		tok = createNewToken(token.Minus, l.character)
+	case '!':
+		if l.peekNextCharacter() == '=' {
+			character := l.character
+			l.readNextCharacter()
+			newCode := string(character) + string(l.character)
+			tok.Category = token.IsNotEqualTo
+			tok.Code = newCode
+		} else {
+			tok = createNewToken(token.Bang, l.character)
+		}
+	case '*':
+		tok = createNewToken(token.Asterisk, l.character)
+	case '/':
+		tok = createNewToken(token.ForwardSlash, l.character)
+	case '<':
+		tok = createNewToken(token.LessThan, l.character)
+	case '>':
+		tok = createNewToken(token.GreaterThan, l.character)
+	case 0:
+		tok.Category = token.End
+	default:
+		if isKeywordOrIdentifierCharacter(l.character) {
+			code := l.readKeywordOrIdentifier()
+			tok.Category = token.MatchCodeToKeywordOrIdentifier(code)
+			tok.Code = code
+			return tok
+		} else if isDigit(l.character) {
+			tok.Category = token.Integer
+			tok.Code = l.readInteger()
+			return tok
+		} else {
+			tok = createNewToken(token.Illegal, l.character)
+		}
+	}
+	l.readNextCharacter()
+	return tok
+}
+
+// A method that reads a keyword or identifier and advances the lexer by the appropriate number of characters.
+// Returns a keyword or identifier.
+func (l *Lexer) readKeywordOrIdentifier() string {
+	startPosition := l.position
+	for isKeywordOrIdentifierCharacter(l.character) {
+		l.readNextCharacter()
+	}
+	return l.script[startPosition:l.position]
+}
+
+// A method that reads whitespace and advances the lexer by the appropriate number of characters.
+func (l *Lexer) readWhitespace() {
+	for l.character == ' ' || l.character == '\n' || l.character == '\r' {
+		l.readNextCharacter()
+	}
+}
+
+// A method that reads an integer and advances the lexer by the appropriate number of characters.
+// Returns an integer in string form.
+func (l *Lexer) readInteger() string {
+	startPosition := l.position
+	for isDigit(l.character) {
+		l.readNextCharacter()
+	}
+	return l.script[startPosition:l.position]
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// FUNCTIONS
+////////////////////////////////////////////////////////////////////////////////
+
+// A function that creates a lexer.
+// Returns a lexer.
 func New(script string) *Lexer {
 	lexer_ := &Lexer{script: script}
-	lexer_.readChar()
+	lexer_.readNextCharacter()
 	return lexer_
 }
 
-// Reads the next character in the script.
-func (lexer_ *Lexer) readChar() {
-	if lexer_.nextPosition >= len(lexer_.script) {
-		lexer_.character = 0
-	} else {
-		lexer_.character = lexer_.script[lexer_.nextPosition]
-	}
-	lexer_.position = lexer_.nextPosition
-	lexer_.nextPosition += 1
+// A function that creates a token.
+// Returns a token.
+func createNewToken(category string, character byte) token.Token {
+	return token.Token{Category: category, Code: string(character)}
 }
 
-// Lexes the next chunk of text and returns its token.
-func (lexer_ *Lexer) NextToken() token.Token {
-	var token_ token.Token
-	lexer_.skipWhitespace()
-	switch lexer_.character {
-	case '=':
-		if lexer_.peekCharacter() == '=' {
-			character := lexer_.character
-			lexer_.readChar()
-			newString := string(character) + string(lexer_.character)
-			token_.Category = token.IsEqualTo
-			token_.String = newString
-		} else {
-			token_ = newToken(token.Assign, lexer_.character)
-		}
-	case '+':
-		token_ = newToken(token.Plus, lexer_.character)
-	case ',':
-		token_ = newToken(token.Comma, lexer_.character)
-	case ';':
-		token_ = newToken(token.Semicolon, lexer_.character)
-	case '(':
-		token_ = newToken(token.LeftParenthesis, lexer_.character)
-	case ')':
-		token_ = newToken(token.RightParenthesis, lexer_.character)
-	case '{':
-		token_ = newToken(token.LeftBrace, lexer_.character)
-	case '}':
-		token_ = newToken(token.RightBrace, lexer_.character)
-	case '-':
-		token_ = newToken(token.Minus, lexer_.character)
-	case '!':
-		if lexer_.peekCharacter() == '=' {
-			character := lexer_.character
-			lexer_.readChar()
-			newString := string(character) + string(lexer_.character)
-			token_.Category = token.IsNotEqualTo
-			token_.String = newString
-		} else {
-			token_ = newToken(token.Bang, lexer_.character)
-		}
-	case '*':
-		token_ = newToken(token.Asterisk, lexer_.character)
-	case '/':
-		token_ = newToken(token.Slash, lexer_.character)
-	case '<':
-		token_ = newToken(token.LessThan, lexer_.character)
-	case '>':
-		token_ = newToken(token.GreaterThan, lexer_.character)
-	case 0:
-		token_.Category = token.End
-	default:
-		if isLetter(lexer_.character) {
-			token_.String = lexer_.readIdentifier()
-			token_.Category = token.IsIdentifier(token_.String)
-			return token_
-		} else if isDigit(lexer_.character) {
-			token_.Category = token.Integer
-			token_.String = lexer_.readNumber()
-			return token_
-		} else {
-			token_ = newToken(token.Illegal, lexer_.character)
-		}
-	}
-	lexer_.readChar()
-	return token_
-}
-
-// Creates a new token.
-func newToken(category string, character byte) token.Token {
-	return token.Token{Category: category, String: string(character)}
-}
-
-// Reads the current chunk of text all the way through until a
-// non-identifier character is found.
-func (lexer_ *Lexer) readIdentifier() string {
-	position := lexer_.position
-	for isLetter(lexer_.character) {
-		lexer_.readChar()
-	}
-	return lexer_.script[position:lexer_.position]
-}
-
-// Checks if the given character is a letter (or an underscore).
-func isLetter(character byte) bool {
+// A function that checks if a character is valid in a keyword or identifier.
+// Returns true or false.
+func isKeywordOrIdentifierCharacter(character byte) bool {
 	return 'a' <= character && character <= 'z' || 'A' <= character && character <= 'Z' || character == '_'
 }
 
-// Skips through the script until a non-whitespace character is found.
-func (lexer_ *Lexer) skipWhitespace() {
-	for lexer_.character == ' ' || lexer_.character == '\n' || lexer_.character == '\r' {
-		lexer_.readChar()
-	}
-}
-
-// Reads the current chunk of text all the way through until a
-// non-number character is found.
-func (lexer_ *Lexer) readNumber() string {
-	position := lexer_.position
-	for isDigit(lexer_.character) {
-		lexer_.readChar()
-	}
-	return lexer_.script[position:lexer_.position]
-}
-
-// Checks if the given character is a digit.
+// A function that checks if a character is a digit.
+// Returns true or false.
 func isDigit(character byte) bool {
 	return '0' <= character && character <= '9'
 }
 
-// Gets the next character in the script.
-func (lexer_ *Lexer) peekCharacter() byte {
-	if lexer_.nextPosition >= len(lexer_.script) {
+// A function that reads the next character but does not advance the lexer.
+// Returns a character.
+func (l *Lexer) peekNextCharacter() byte {
+	if l.nextPosition >= len(l.script) {
 		return 0
-	} else {
-		return lexer_.script[lexer_.nextPosition]
 	}
+	return l.script[l.nextPosition]
 }

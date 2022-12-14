@@ -1,21 +1,16 @@
 package token
 
-// A token has a category (semantics) and a string (text).
-// It has no knowledge of syntactic correctness and is simply a
-// representation of a chunk of text in a Monkey script.
-type Token struct {
-	Category string
-	String   string
-}
+////////////////////////////////////////////////////////////////////////////////
+// VARIABLES
+////////////////////////////////////////////////////////////////////////////////
 
-// All possible token categories.
-// This includes every programming construct in Monkey.
+// A possible value of a token's category.
 const (
 	Illegal          = "Illegal"
 	End              = "End"
 	Identifier       = "Identifier"
 	Integer          = "Integer"
-	Assign           = "Assign"
+	Equals           = "Equals"
 	Plus             = "Plus"
 	Comma            = "Comma"
 	Semicolon        = "Semicolon"
@@ -28,7 +23,7 @@ const (
 	Minus            = "Minus"
 	Bang             = "Bang"
 	Asterisk         = "Asterisk"
-	Slash            = "/"
+	ForwardSlash     = "ForwardSlash"
 	LessThan         = "LessThan"
 	GreaterThan      = "GreaterThan"
 	True             = "True"
@@ -40,9 +35,7 @@ const (
 	IsNotEqualTo     = "IsNotEqualTo"
 )
 
-// All possible keywords.
-// Tokens with a category of "identifier" store either a keyword or a
-// variable name.
+// A map between a token's code and its corresponding category, if that category is a keyword.
 var keywords = map[string]string{
 	"fn":     Function,
 	"let":    Let,
@@ -53,10 +46,27 @@ var keywords = map[string]string{
 	"return": Return,
 }
 
-// Check if an identifier is a keyword or a variable name.
-func IsIdentifier(identifier string) string {
-	if token_, ok := keywords[identifier]; ok {
-		return token_
+////////////////////////////////////////////////////////////////////////////////
+// STRUCTURES
+////////////////////////////////////////////////////////////////////////////////
+
+// A struct that is a semantically cohesive chunk of code in a script.
+type Token struct {
+	// A string that indicates semantic significance.
+	Category string
+	// A string that is the extracted code from a script.
+	Code string
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// FUNCTIONS
+////////////////////////////////////////////////////////////////////////////////
+
+// A function that matches a token's code to a keyword or identifier category.
+// Returns a category.
+func MatchCodeToKeywordOrIdentifier(code string) string {
+	if category, ok := keywords[code]; ok {
+		return category
 	}
 	return Identifier
 }

@@ -1,175 +1,179 @@
 package ast
 
+////////////////////////////////////////////////////////////////////////////////
+// DEPENDENCIES
+////////////////////////////////////////////////////////////////////////////////
+
 import (
 	"bytes"
 	"example-interpreter/token"
 )
 
-// Every component of an AST is considered a node.
-// This includes the root of the AST, a whole statement, a whole
-// expression, and atomic constructs like identifiers and operators.
+////////////////////////////////////////////////////////////////////////////////
+// INTERFACES
+////////////////////////////////////////////////////////////////////////////////
+
+// An interface that defines a node.
 type Node interface {
-	GetString() string
+	GetCode() string
 	GetDebugString() string
 }
 
-// A statement is a full line of code in a Monkey script,
-// delimited by a semicolon.
+// An interface that defines a statement node.
 type Statement interface {
 	Node
-	GetStatementNode()
 }
 
-// An expression is a chunk of code that produces a value.
-// Expressions typically include other expressions, such as
-// 5 * (5 + 5), which is an expression within an expression.
+// An interface that defines an expression node.
 type Expression interface {
 	Node
-	GetExpressionNode()
 }
 
-// The root node of an AST.
-// The entire script is stored here, delimited by statements.
+////////////////////////////////////////////////////////////////////////////////
+// STRUCTURES
+////////////////////////////////////////////////////////////////////////////////
+
+// A struct that contains all statements in a script and is the root node of an AST.
 type Program struct {
+	// A slice that contains all statements in a script.
 	Statements []Statement
 }
 
-// Converts a program node into a debug string for test comparisons.
-func (program *Program) GetDebugString() string {
+// A struct that segments a let statement: (let) (identifier) = (expression).
+type LetStatement struct {
+	// A token that holds the "let" segment.
+	LetToken token.Token
+	// An identifier that holds the "identifier" segment.
+	Identifier *Identifier
+	// An expression that holds the right-hand-side "expression" segment.
+	Expression Expression
+}
+
+// A struct that segments a return statement: (return) (expression).
+type ReturnStatement struct {
+	// A token that holds the "return" segment.
+	Token token.Token
+	// An expression that holds the right-hand-side "expression" segment.
+	Expression Expression
+}
+
+// todo
+type ExpressionStatement struct {
+	// todo
+	Token token.Token
+	// todo
+	Expression Expression
+}
+
+// A struct that defines an identifier.
+type Identifier struct {
+	// A token that holds the name.
+	Token token.Token
+	// A string that is the expressed value.
+	Value string
+}
+
+// A struct that defines an integer.
+type Integer struct {
+	// A token that holds the integer.
+	Token token.Token
+	// An int that is the numerical value.
+	Value int64
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// METHODS
+////////////////////////////////////////////////////////////////////////////////
+
+// A method that converts a program into a debug string.
+// Returns a string.
+func (p *Program) GetDebugString() string {
 	var out bytes.Buffer
-	for _, statement := range program.Statements {
+	for _, statement := range p.Statements {
 		out.WriteString(statement.GetDebugString())
 	}
 	return out.String()
 }
 
-// todo
-func (program *Program) GetString() string {
-	if len(program.Statements) > 0 {
-		return program.Statements[0].GetString()
-	} else {
-		return ""
-	}
-}
-
-// A let statement contains three components:
-// 1. The "Let" token itself,
-// 2. The declared identifier, and
-// 3. The right-hand-side expression.
-type LetStatement struct {
-	Token token.Token
-	Name  *Identifier
-	Value Expression
-}
-
-// Converts a LetStatement node into a debug string for test
-// comparisons.
-func (letStatement *LetStatement) GetDebugString() string {
-	var out bytes.Buffer
-	out.WriteString(letStatement.GetString() + " ")
-	out.WriteString(letStatement.Name.GetString() + " = ")
-	if letStatement.Value != nil {
-		out.WriteString(letStatement.Value.GetDebugString())
-	}
-	out.WriteString(";")
-	return out.String()
-}
-
-// (Debug)
-func (letStatement *LetStatement) GetStatementNode() {}
-
-// (Debug) Gets the "let" string.
-func (letStatement *LetStatement) GetString() string {
-	return letStatement.Token.String
-}
-
-// An identifier has a token and an actual value, or the data that is
-// retrieved by typing the identifier name in code.
-type Identifier struct {
-	Token token.Token
-	Value string
-}
-
-// Converts an Identifier node into a debug string for test
-// comparisons.
-func (identifier *Identifier) GetDebugString() string {
-	return identifier.Value
-}
-
-// (Debug)
-func (identifier *Identifier) GetExpressionNode() {}
-
-// (Debug) Gets the identifier string.
-func (identifier *Identifier) GetString() string {
-	return identifier.Token.String
-}
-
-// A return statement contains two components:
-// 1. The "return" token itself, and
-// 2. The expression that is returned.
-type ReturnStatement struct {
-	Token token.Token
-	Value Expression
-}
-
-// Converts a ReturnStatement node into a debug string for test
-// comparisons.
-func (returnStatement *ReturnStatement) GetDebugString() string {
-	var out bytes.Buffer
-	out.WriteString(returnStatement.GetString() + " ")
-	if returnStatement.Value != nil {
-		out.WriteString(returnStatement.Value.GetDebugString())
-	}
-	out.WriteString(";")
-	return out.String()
-}
-
-// (Debug)
-func (returnStatement *ReturnStatement) GetStatementNode() {}
-
-// (Debug) Gets the "return" string.
-func (returnStatement *ReturnStatement) GetString() string {
-	return returnStatement.Token.String
-}
-
-// todo
-type ExpressionStatement struct {
-	Token      token.Token
-	Expression Expression
-}
-
-// Converts an ExpressionStatement node into a debug string for test
-// comparisons.
-func (expressionStatement *ExpressionStatement) GetDebugString() string {
-	if expressionStatement.Expression != nil {
-		return expressionStatement.Expression.GetDebugString()
+// A method that gets the code in a program.
+// Returns a string.
+func (p *Program) GetCode() string {
+	if len(p.Statements) > 0 {
+		return p.Statements[0].GetCode()
 	}
 	return ""
 }
 
-// (Debug)
-func (expressionStatement *ExpressionStatement) GetStatementNode() {}
-
-// (Debug) Gets the expression string.
-func (expressionStatement *ExpressionStatement) GetString() string {
-	return expressionStatement.Token.String
+// A method that converts a let statement into a debug string.
+// Returns a string.
+func (ls *LetStatement) GetDebugString() string {
+	var out bytes.Buffer
+	out.WriteString(ls.GetCode() + " ")
+	out.WriteString(ls.Identifier.GetCode() + " = ")
+	if ls.Expression != nil {
+		out.WriteString(ls.Expression.GetDebugString())
+	}
+	out.WriteString(";")
+	return out.String()
 }
 
-type Integer struct {
-	Token token.Token
-	Value int64
+// A method that gets the "let" segment code.
+// Returns a string.
+func (ls *LetStatement) GetCode() string {
+	return ls.LetToken.Code
 }
 
-// Converts an Integer node into a debug string for test
-// comparisons.
-func (integer *Integer) GetDebugString() string {
-	return integer.Token.String
+// A method that converts a return statement into a debug string.
+// Returns a string.
+func (rs *ReturnStatement) GetDebugString() string {
+	var out bytes.Buffer
+	out.WriteString(rs.GetCode() + " ")
+	if rs.Expression != nil {
+		out.WriteString(rs.Expression.GetDebugString())
+	}
+	out.WriteString(";")
+	return out.String()
 }
 
-// (Debug)
-func (integer *Integer) GetExpressionNode() {}
+// A method that gets the "return" segment code.
+// Returns a string.
+func (rs *ReturnStatement) GetCode() string {
+	return rs.Token.Code
+}
 
-// (Debug) Gets the integer string.
-func (integer *Integer) GetString() string {
-	return integer.Token.String
+// todo
+func (es *ExpressionStatement) GetDebugString() string {
+	if es.Expression != nil {
+		return es.Expression.GetDebugString()
+	}
+	return ""
+}
+
+// todo
+func (es *ExpressionStatement) GetCode() string {
+	return es.Token.Code
+}
+
+// A method that gets the code of an identifier.
+// Returns a string.
+func (i *Identifier) GetCode() string {
+	return i.Token.Code
+}
+
+// A method that converts an identifier to a debug string.
+// Returns a string.
+func (i *Identifier) GetDebugString() string {
+	return i.Value
+}
+
+// A method that converts the integer into a debug string.
+// Returns a string.
+func (i *Integer) GetDebugString() string {
+	return i.Token.Code
+}
+
+// A method that gets the integer code.
+// Returns a string.
+func (i *Integer) GetCode() string {
+	return i.Token.Code
 }

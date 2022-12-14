@@ -8,11 +8,8 @@ import (
 	"io"
 )
 
-// Prefix to display before any user input.
 const prefix = ">> "
 
-// REPL entry point.
-// Launches the REPL and continuously waits, parses, and outputs.
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 	for {
@@ -23,7 +20,7 @@ func Start(in io.Reader, out io.Writer) {
 		}
 		line := scanner.Text()
 		lexer_ := lexer.New(line)
-		for token_ := lexer_.NextToken(); token_.Category != token.End; token_ = lexer_.NextToken() {
+		for token_ := lexer_.GetNextToken(); token_.Category != token.End; token_ = lexer_.GetNextToken() {
 			fmt.Fprintf(out, "%+v\n", token_)
 		}
 	}

@@ -8,10 +8,10 @@ import (
 
 func TestLetStatements(t *testing.T) {
 	text := "let x = 5; let y = 10; let foobar = 838383;"
-	lexer_ := lexer.New(text)
-	parser_ := New(lexer_)
-	program := parser_.ParseProgram()
-	checkParserErrors(t, parser_)
+	lxr := lexer.New(text)
+	prs := New(lxr)
+	program := prs.ParseProgram()
+	checkParserErrors(t, prs)
 	if program == nil {
 		t.Fatalf("ParseProgram() returned nil")
 	}
@@ -34,8 +34,8 @@ func TestLetStatements(t *testing.T) {
 }
 
 func testLetStatement(t *testing.T, statement ast.Statement, name string) bool {
-	if statement.GetString() != "let" {
-		t.Errorf("statement.String not let. got = %q", statement.GetString())
+	if statement.GetCode() != "let" {
+		t.Errorf("statement.GetCode() not let. got = %q", statement.GetCode())
 		return false
 	}
 	letStatement, ok := statement.(*ast.LetStatement)
@@ -43,24 +43,23 @@ func testLetStatement(t *testing.T, statement ast.Statement, name string) bool {
 		t.Errorf("statement not *ast.LetStatement. got = %T", statement)
 		return false
 	}
-	if letStatement.Name.Value != name {
-		t.Errorf("letStatement.Name.Value not %s. got = %s", name, letStatement.Name.Value)
+	if letStatement.Identifier.Value != name {
+		t.Errorf("letStatement.Identifier.Value not %s. got = %s", name, letStatement.Identifier.Value)
 		return false
 	}
-	if letStatement.Name.GetString() != name {
-		t.Errorf("letStatement.Name.GetString() not %s. got = %s", name, letStatement.Name.GetString())
+	if letStatement.Identifier.GetCode() != name {
+		t.Errorf("letStatement.Identifier.GetCode() not %s. got = %s", name, letStatement.Identifier.GetCode())
 		return false
 	}
 	return true
 }
 
-func checkParserErrors(t *testing.T, parser_ *Parser) {
-	errors := parser_.GetErrors()
-	if len(errors) == 0 {
+func checkParserErrors(t *testing.T, prs *Parser) {
+	if len(prs.errors) == 0 {
 		return
 	}
-	t.Errorf("parser has %d errors", len(errors))
-	for _, message := range errors {
+	t.Errorf("parser has %d errors", len(prs.errors))
+	for _, message := range prs.errors {
 		t.Errorf("parser error: %q", message)
 	}
 	t.FailNow()
@@ -68,10 +67,10 @@ func checkParserErrors(t *testing.T, parser_ *Parser) {
 
 func TestReturnStatements(t *testing.T) {
 	text := "return 5; return 10; return 993322;"
-	lexer_ := lexer.New(text)
-	parser_ := New(lexer_)
-	program := parser_.ParseProgram()
-	checkParserErrors(t, parser_)
+	lxr := lexer.New(text)
+	prs := New(lxr)
+	program := prs.ParseProgram()
+	checkParserErrors(t, prs)
 	if len(program.Statements) != 3 {
 		t.Fatalf("program.Statements does not contain 3 statements. got %d", len(program.Statements))
 	}
@@ -81,18 +80,18 @@ func TestReturnStatements(t *testing.T) {
 			t.Errorf("statement not *ast.ReturnStatement. got %T", statement)
 			continue
 		}
-		if returnStatement.GetString() != "return" {
-			t.Errorf("returnStatement.GetString() not return, got %q", returnStatement.GetString())
+		if returnStatement.GetCode() != "return" {
+			t.Errorf("returnStatement.GetCode() not return, got %q", returnStatement.GetCode())
 		}
 	}
 }
 
 func TestIdentifierExpression(t *testing.T) {
 	text := "foobar;"
-	lexer_ := lexer.New(text)
-	parser_ := New(lexer_)
-	program := parser_.ParseProgram()
-	checkParserErrors(t, parser_)
+	lxr := lexer.New(text)
+	prs := New(lxr)
+	program := prs.ParseProgram()
+	checkParserErrors(t, prs)
 	if len(program.Statements) != 1 {
 		t.Fatalf("program has not enough statements. got = %d", len(program.Statements))
 	}
@@ -107,17 +106,17 @@ func TestIdentifierExpression(t *testing.T) {
 	if identifier.Value != "foobar" {
 		t.Errorf("identifier.Value not %s. got = %s", "foobar", identifier.Value)
 	}
-	if identifier.GetString() != "foobar" {
-		t.Errorf("identifier.GetString() not %s. got = %s", "foobar", identifier.GetString())
+	if identifier.GetCode() != "foobar" {
+		t.Errorf("identifier.GetCode() not %s. got = %s", "foobar", identifier.GetCode())
 	}
 }
 
 func TestIntegerExpression(t *testing.T) {
 	text := "5;"
-	lexer_ := lexer.New(text)
-	parser_ := New(lexer_)
-	program := parser_.ParseProgram()
-	checkParserErrors(t, parser_)
+	lxr := lexer.New(text)
+	prs := New(lxr)
+	program := prs.ParseProgram()
+	checkParserErrors(t, prs)
 	if len(program.Statements) != 1 {
 		t.Fatalf("program has not enough statements. got = %d", len(program.Statements))
 	}
@@ -132,7 +131,7 @@ func TestIntegerExpression(t *testing.T) {
 	if integer.Value != 5 {
 		t.Errorf("integer.Value not %d. got = %d", 5, integer.Value)
 	}
-	if integer.GetString() != "5" {
-		t.Errorf("integer.GetString() not %s. got = %s", "5", integer.GetString())
+	if integer.GetCode() != "5" {
+		t.Errorf("integer.GetCode() not %s. got = %s", "5", integer.GetCode())
 	}
 }

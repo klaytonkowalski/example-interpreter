@@ -9,13 +9,13 @@ func TestGetDebugString(t *testing.T) {
 	program := &Program{
 		Statements: []Statement{
 			&LetStatement{
-				Token: token.Token{Category: token.Let, String: "let"},
-				Name: &Identifier{
-					Token: token.Token{Category: token.Identifier, String: "myVar"},
+				LetToken: token.Token{Category: token.Let, Code: "let"},
+				Identifier: &Identifier{
+					Token: token.Token{Category: token.Identifier, Code: "myVar"},
 					Value: "myVar",
 				},
-				Value: &Identifier{
-					Token: token.Token{Category: token.Identifier, String: "anotherVar"},
+				Expression: &Identifier{
+					Token: token.Token{Category: token.Identifier, Code: "anotherVar"},
 					Value: "anotherVar",
 				},
 			},
