@@ -1,3 +1,3 @@
-module example-go-interpreter
+module example-interpreter
 
 go 1.19

@@ -1,7 +1,7 @@
 package lexer
 
 import (
-	"example-go-interpreter/token"
+	"example-interpreter/token"
 )
 
 // A lexer steps through text in a Monkey script and transforms each

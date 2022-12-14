@@ -1,8 +1,8 @@
 package parser
 
 import (
-	"example-go-interpreter/ast"
-	"example-go-interpreter/lexer"
+	"example-interpreter/ast"
+	"example-interpreter/lexer"
 	"testing"
 )
 
@@ -64,4 +64,75 @@ func checkParserErrors(t *testing.T, parser_ *Parser) {
 		t.Errorf("parser error: %q", message)
 	}
 	t.FailNow()
+}
+
+func TestReturnStatements(t *testing.T) {
+	text := "return 5; return 10; return 993322;"
+	lexer_ := lexer.New(text)
+	parser_ := New(lexer_)
+	program := parser_.ParseProgram()
+	checkParserErrors(t, parser_)
+	if len(program.Statements) != 3 {
+		t.Fatalf("program.Statements does not contain 3 statements. got %d", len(program.Statements))
+	}
+	for _, statement := range program.Statements {
+		returnStatement, ok := statement.(*ast.ReturnStatement)
+		if !ok {
+			t.Errorf("statement not *ast.ReturnStatement. got %T", statement)
+			continue
+		}
+		if returnStatement.GetString() != "return" {
+			t.Errorf("returnStatement.GetString() not return, got %q", returnStatement.GetString())
+		}
+	}
+}
+
+func TestIdentifierExpression(t *testing.T) {
+	text := "foobar;"
+	lexer_ := lexer.New(text)
+	parser_ := New(lexer_)
+	program := parser_.ParseProgram()
+	checkParserErrors(t, parser_)
+	if len(program.Statements) != 1 {
+		t.Fatalf("program has not enough statements. got = %d", len(program.Statements))
+	}
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got = %T", program.Statements[0])
+	}
+	identifier, ok := statement.Expression.(*ast.Identifier)
+	if !ok {
+		t.Fatalf("exp not *ast.Identifier. got = %T", statement.Expression)
+	}
+	if identifier.Value != "foobar" {
+		t.Errorf("identifier.Value not %s. got = %s", "foobar", identifier.Value)
+	}
+	if identifier.GetString() != "foobar" {
+		t.Errorf("identifier.GetString() not %s. got = %s", "foobar", identifier.GetString())
+	}
+}
+
+func TestIntegerExpression(t *testing.T) {
+	text := "5;"
+	lexer_ := lexer.New(text)
+	parser_ := New(lexer_)
+	program := parser_.ParseProgram()
+	checkParserErrors(t, parser_)
+	if len(program.Statements) != 1 {
+		t.Fatalf("program has not enough statements. got = %d", len(program.Statements))
+	}
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got = %T", program.Statements[0])
+	}
+	integer, ok := statement.Expression.(*ast.Integer)
+	if !ok {
+		t.Fatalf("exp not *ast.Integer. got = %T", statement.Expression)
+	}
+	if integer.Value != 5 {
+		t.Errorf("integer.Value not %d. got = %d", 5, integer.Value)
+	}
+	if integer.GetString() != "5" {
+		t.Errorf("integer.GetString() not %s. got = %s", "5", integer.GetString())
+	}
 }

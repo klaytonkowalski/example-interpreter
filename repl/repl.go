@@ -2,8 +2,8 @@ package repl
 
 import (
 	"bufio"
-	"example-go-interpreter/lexer"
-	"example-go-interpreter/token"
+	"example-interpreter/lexer"
+	"example-interpreter/token"
 	"fmt"
 	"io"
 )

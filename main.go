@@ -1,7 +1,7 @@
 package main
 
 import (
-	"example-go-interpreter/repl"
+	"example-interpreter/repl"
 	"fmt"
 	"os"
 	"os/user"

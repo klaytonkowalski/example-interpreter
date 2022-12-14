@@ -1,7 +1,7 @@
 package lexer
 
 import (
-	"example-go-interpreter/token"
+	"example-interpreter/token"
 	"testing"
 )
 
