@@ -57,12 +57,22 @@ type ReturnStatement struct {
 	Expression Expression
 }
 
-// todo
 type ExpressionStatement struct {
-	// todo
-	Token token.Token
-	// todo
+	Token      token.Token
 	Expression Expression
+}
+
+type PrefixExpression struct {
+	PrefixToken   token.Token
+	Operator      string
+	RHSExpression Expression
+}
+
+type InfixExpression struct {
+	InfixToken    token.Token
+	LHSExpression Expression
+	Operator      string
+	RHSExpression Expression
 }
 
 // A struct that defines an identifier.
@@ -85,6 +95,15 @@ type Integer struct {
 // METHODS
 ////////////////////////////////////////////////////////////////////////////////
 
+// A method that gets the code in a program.
+// Returns a string.
+func (p *Program) GetCode() string {
+	if len(p.Statements) > 0 {
+		return p.Statements[0].GetCode()
+	}
+	return ""
+}
+
 // A method that converts a program into a debug string.
 // Returns a string.
 func (p *Program) GetDebugString() string {
@@ -95,13 +114,10 @@ func (p *Program) GetDebugString() string {
 	return out.String()
 }
 
-// A method that gets the code in a program.
+// A method that gets the "let" segment code.
 // Returns a string.
-func (p *Program) GetCode() string {
-	if len(p.Statements) > 0 {
-		return p.Statements[0].GetCode()
-	}
-	return ""
+func (ls *LetStatement) GetCode() string {
+	return ls.LetToken.Code
 }
 
 // A method that converts a let statement into a debug string.
@@ -117,10 +133,10 @@ func (ls *LetStatement) GetDebugString() string {
 	return out.String()
 }
 
-// A method that gets the "let" segment code.
+// A method that gets the "return" segment code.
 // Returns a string.
-func (ls *LetStatement) GetCode() string {
-	return ls.LetToken.Code
+func (rs *ReturnStatement) GetCode() string {
+	return rs.Token.Code
 }
 
 // A method that converts a return statement into a debug string.
@@ -135,13 +151,10 @@ func (rs *ReturnStatement) GetDebugString() string {
 	return out.String()
 }
 
-// A method that gets the "return" segment code.
-// Returns a string.
-func (rs *ReturnStatement) GetCode() string {
-	return rs.Token.Code
+func (es *ExpressionStatement) GetCode() string {
+	return es.Token.Code
 }
 
-// todo
 func (es *ExpressionStatement) GetDebugString() string {
 	if es.Expression != nil {
 		return es.Expression.GetDebugString()
@@ -149,9 +162,31 @@ func (es *ExpressionStatement) GetDebugString() string {
 	return ""
 }
 
-// todo
-func (es *ExpressionStatement) GetCode() string {
-	return es.Token.Code
+func (pe *PrefixExpression) GetCode() string {
+	return pe.PrefixToken.Code
+}
+
+func (pe *PrefixExpression) GetDebugString() string {
+	var out bytes.Buffer
+	out.WriteString("(")
+	out.WriteString(pe.Operator)
+	out.WriteString(pe.RHSExpression.GetDebugString())
+	out.WriteString(")")
+	return out.String()
+}
+
+func (ie *InfixExpression) GetCode() string {
+	return ie.InfixToken.Code
+}
+
+func (ie *InfixExpression) GetDebugString() string {
+	var out bytes.Buffer
+	out.WriteString("(")
+	out.WriteString(ie.LHSExpression.GetDebugString())
+	out.WriteString(ie.Operator)
+	out.WriteString(ie.RHSExpression.GetDebugString())
+	out.WriteString(")")
+	return out.String()
 }
 
 // A method that gets the code of an identifier.
@@ -166,14 +201,14 @@ func (i *Identifier) GetDebugString() string {
 	return i.Value
 }
 
-// A method that converts the integer into a debug string.
-// Returns a string.
-func (i *Integer) GetDebugString() string {
-	return i.Token.Code
-}
-
 // A method that gets the integer code.
 // Returns a string.
 func (i *Integer) GetCode() string {
+	return i.Token.Code
+}
+
+// A method that converts the integer into a debug string.
+// Returns a string.
+func (i *Integer) GetDebugString() string {
 	return i.Token.Code
 }

@@ -28,6 +28,18 @@ const (
 	Call
 )
 
+// A map between an infix operator token's category and its precedence.
+var precedences = map[string]int{
+	token.IsEqualTo:    Equals,
+	token.IsNotEqualTo: Equals,
+	token.LessThan:     LessOrGreaterThan,
+	token.GreaterThan:  LessOrGreaterThan,
+	token.Plus:         Sum,
+	token.Minus:        Sum,
+	token.ForwardSlash: Product,
+	token.Asterisk:     Product,
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRUCTURES
 ////////////////////////////////////////////////////////////////////////////////
@@ -43,9 +55,9 @@ type Parser struct {
 	// A string slice that contains parsing errors.
 	errors []string
 	// A map between a token's category and its prefix parsing function.
-	prefixFunctions map[string]parsePrefix
+	prefixFunctions map[string]parsePrefixFunc
 	// A map between a token's category and its infix parsing function.
-	infixFunctions map[string]parseInfix
+	infixFunctions map[string]parseInfixFunc
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -126,16 +138,51 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 func (p *Parser) parseExpression(precedence int) ast.Expression {
 	prefix := p.prefixFunctions[p.tok.Category]
 	if prefix == nil {
+		p.appendPrefixError(p.tok.Category)
 		return nil
 	}
-	leftExpression := prefix()
-	return leftExpression
+	lhsExpression := prefix()
+	for p.nextTok.Category != token.Semicolon && precedence < p.getNextPrecedence() {
+		infix := p.infixFunctions[p.nextTok.Category]
+		if infix == nil {
+			return lhsExpression
+		}
+		p.GetNextToken()
+		lhsExpression = infix(lhsExpression)
+	}
+	return lhsExpression
 }
 
 // A method that parses an identifier.
 // Returns an expression.
 func (p *Parser) parseIdentifier() ast.Expression {
 	return &ast.Identifier{Token: p.tok, Value: p.tok.Code}
+}
+
+// A method that parses a prefix expression.
+// Returns an expression.
+func (p *Parser) parsePrefix() ast.Expression {
+	expression := &ast.PrefixExpression{
+		PrefixToken: p.tok,
+		Operator:    p.tok.Code,
+	}
+	p.GetNextToken()
+	expression.RHSExpression = p.parseExpression(Prefix)
+	return expression
+}
+
+// A method that parses an infix expression.
+// Returns an expression.
+func (p *Parser) parseInfix(lhsExpression ast.Expression) ast.Expression {
+	expression := &ast.InfixExpression{
+		InfixToken:    p.tok,
+		Operator:      p.tok.Code,
+		LHSExpression: lhsExpression,
+	}
+	precedence := p.getPrecedence()
+	p.GetNextToken()
+	expression.RHSExpression = p.parseExpression(precedence)
+	return expression
 }
 
 // A method that parses an integer.
@@ -164,13 +211,37 @@ func (p *Parser) assertNextToken(category string) bool {
 	if p.nextTok.Category == category {
 		return true
 	}
-	p.appendError(category)
+	p.appendCategoryError(category)
 	return false
 }
 
+// A method that gets the precedence of the current token.
+// Returns a value.
+func (p *Parser) getPrecedence() int {
+	if precedence, ok := precedences[p.tok.Category]; ok {
+		return precedence
+	}
+	return Lowest
+}
+
+// A method that gets the precedence of the next token.
+// Returns a value.
+func (p *Parser) getNextPrecedence() int {
+	if precedence, ok := precedences[p.nextTok.Category]; ok {
+		return precedence
+	}
+	return Lowest
+}
+
 // A method that logs an unexpected token category error.
-func (p *Parser) appendError(category string) {
+func (p *Parser) appendCategoryError(category string) {
 	message := fmt.Sprintf("expected next token to be %s, got %s instead", category, p.nextTok.Category)
+	p.errors = append(p.errors, message)
+}
+
+// A method that logs an unexpected prefix expression error.
+func (p *Parser) appendPrefixError(category string) {
+	message := fmt.Sprintf("no prefix parse function for %s found", category)
 	p.errors = append(p.errors, message)
 }
 
@@ -184,16 +255,27 @@ func New(lxr *lexer.Lexer) *Parser {
 	prs := &Parser{lxr: lxr, errors: []string{}}
 	prs.GetNextToken()
 	prs.GetNextToken()
-	prs.prefixFunctions = make(map[string]parsePrefix)
+	prs.prefixFunctions = make(map[string]parsePrefixFunc)
 	prs.prefixFunctions[token.Identifier] = prs.parseIdentifier
 	prs.prefixFunctions[token.Integer] = prs.parseInteger
+	prs.prefixFunctions[token.Bang] = prs.parsePrefix
+	prs.prefixFunctions[token.Minus] = prs.parsePrefix
+	prs.infixFunctions = make(map[string]parseInfixFunc)
+	prs.infixFunctions[token.Plus] = prs.parseInfix
+	prs.infixFunctions[token.Minus] = prs.parseInfix
+	prs.infixFunctions[token.ForwardSlash] = prs.parseInfix
+	prs.infixFunctions[token.Asterisk] = prs.parseInfix
+	prs.infixFunctions[token.IsEqualTo] = prs.parseInfix
+	prs.infixFunctions[token.IsNotEqualTo] = prs.parseInfix
+	prs.infixFunctions[token.LessThan] = prs.parseInfix
+	prs.infixFunctions[token.GreaterThan] = prs.parseInfix
 	return prs
 }
 
 // A function that parses a prefix operator.
 // Returns an expression.
-type parsePrefix func() ast.Expression
+type parsePrefixFunc func() ast.Expression
 
 // A function that parses a infix operator.
 // Returns an expression.
-type parseInfix func() ast.Expression
+type parseInfixFunc func(lhsExpression ast.Expression) ast.Expression
