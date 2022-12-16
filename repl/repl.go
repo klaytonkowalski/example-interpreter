@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/klaytonkowalski/example-interpreter/evaluator"
 	"github.com/klaytonkowalski/example-interpreter/lexer"
 	"github.com/klaytonkowalski/example-interpreter/parser"
 )
@@ -39,8 +40,11 @@ func Start(in io.Reader, out io.Writer) {
 			printParserErrors(out, prs.Errors)
 			continue
 		}
-		io.WriteString(out, program.GetDebugString())
-		io.WriteString(out, "\n")
+		evaluated := evaluator.Evaluate(program)
+		if evaluated != nil {
+			io.WriteString(out, evaluated.GetDebugString())
+			io.WriteString(out, "\n")
+		}
 	}
 }
 
