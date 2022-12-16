@@ -5,30 +5,24 @@ package lexer
 ////////////////////////////////////////////////////////////////////////////////
 
 import (
-	"example-interpreter/token"
+	"github.com/klaytonkowalski/example-interpreter/token"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRUCTURES
 ////////////////////////////////////////////////////////////////////////////////
 
-// A struct that steps through a script and tokenizes its code.
 type Lexer struct {
-	// A string that is the extracted text from a script.
-	script string
-	// An int that notes the position of the most recently read character.
-	position int
-	// An int that notes the position of the next character.
+	script       string
+	position     int
 	nextPosition int
-	// A byte that is the most recently read character.
-	character byte
+	character    byte
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // METHODS
 ////////////////////////////////////////////////////////////////////////////////
 
-// A method that reads the next character in a script and advances the lexer by one character.
 func (l *Lexer) readNextCharacter() {
 	if l.nextPosition >= len(l.script) {
 		l.character = 0
@@ -39,8 +33,6 @@ func (l *Lexer) readNextCharacter() {
 	l.nextPosition += 1
 }
 
-// A method that creates the next token in a script.
-// Returns the token.
 func (l *Lexer) GetNextToken() token.Token {
 	var tok token.Token
 	l.readWhitespace()
@@ -109,8 +101,6 @@ func (l *Lexer) GetNextToken() token.Token {
 	return tok
 }
 
-// A method that reads a keyword or identifier and advances the lexer by the appropriate number of characters.
-// Returns a keyword or identifier.
 func (l *Lexer) readKeywordOrIdentifier() string {
 	startPosition := l.position
 	for isKeywordOrIdentifierCharacter(l.character) {
@@ -119,15 +109,12 @@ func (l *Lexer) readKeywordOrIdentifier() string {
 	return l.script[startPosition:l.position]
 }
 
-// A method that reads whitespace and advances the lexer by the appropriate number of characters.
 func (l *Lexer) readWhitespace() {
 	for l.character == ' ' || l.character == '\n' || l.character == '\r' {
 		l.readNextCharacter()
 	}
 }
 
-// A method that reads an integer and advances the lexer by the appropriate number of characters.
-// Returns an integer in string form.
 func (l *Lexer) readInteger() string {
 	startPosition := l.position
 	for isDigit(l.character) {
@@ -140,34 +127,24 @@ func (l *Lexer) readInteger() string {
 // FUNCTIONS
 ////////////////////////////////////////////////////////////////////////////////
 
-// A function that creates a lexer.
-// Returns a lexer.
 func New(script string) *Lexer {
 	lexer_ := &Lexer{script: script}
 	lexer_.readNextCharacter()
 	return lexer_
 }
 
-// A function that creates a token.
-// Returns a token.
 func createNewToken(category string, character byte) token.Token {
 	return token.Token{Category: category, Code: string(character)}
 }
 
-// A function that checks if a character is valid in a keyword or identifier.
-// Returns true or false.
 func isKeywordOrIdentifierCharacter(character byte) bool {
 	return 'a' <= character && character <= 'z' || 'A' <= character && character <= 'Z' || character == '_'
 }
 
-// A function that checks if a character is a digit.
-// Returns true or false.
 func isDigit(character byte) bool {
 	return '0' <= character && character <= '9'
 }
 
-// A function that reads the next character but does not advance the lexer.
-// Returns a character.
 func (l *Lexer) peekNextCharacter() byte {
 	if l.nextPosition >= len(l.script) {
 		return 0

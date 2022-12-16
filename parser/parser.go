@@ -5,18 +5,18 @@ package parser
 ////////////////////////////////////////////////////////////////////////////////
 
 import (
-	"example-interpreter/ast"
-	"example-interpreter/lexer"
-	"example-interpreter/token"
 	"fmt"
 	"strconv"
+
+	"github.com/klaytonkowalski/example-interpreter/ast"
+	"github.com/klaytonkowalski/example-interpreter/lexer"
+	"github.com/klaytonkowalski/example-interpreter/token"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // VARIABLES
 ////////////////////////////////////////////////////////////////////////////////
 
-// A possible precedence value.
 const (
 	_ int = iota
 	Lowest
@@ -28,44 +28,35 @@ const (
 	Call
 )
 
-// A map between an infix operator token's category and its precedence.
 var precedences = map[string]int{
-	token.IsEqualTo:    Equals,
-	token.IsNotEqualTo: Equals,
-	token.LessThan:     LessOrGreaterThan,
-	token.GreaterThan:  LessOrGreaterThan,
-	token.Plus:         Sum,
-	token.Minus:        Sum,
-	token.ForwardSlash: Product,
-	token.Asterisk:     Product,
+	token.IsEqualTo:       Equals,
+	token.IsNotEqualTo:    Equals,
+	token.LessThan:        LessOrGreaterThan,
+	token.GreaterThan:     LessOrGreaterThan,
+	token.Plus:            Sum,
+	token.Minus:           Sum,
+	token.ForwardSlash:    Product,
+	token.Asterisk:        Product,
+	token.LeftParenthesis: Call,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRUCTURES
 ////////////////////////////////////////////////////////////////////////////////
 
-// A struct that builds an AST by stepping through lexer tokens.
 type Parser struct {
-	// A lexer that tokenizes code in a script.
-	lxr *lexer.Lexer
-	// A token that is being examined.
-	tok token.Token
-	// A token that is next to be examined.
-	nextTok token.Token
-	// A string slice that contains parsing errors.
-	errors []string
-	// A map between a token's category and its prefix parsing function.
+	lxr             *lexer.Lexer
+	tok             token.Token
+	nextTok         token.Token
+	Errors          []string
 	prefixFunctions map[string]parsePrefixFunc
-	// A map between a token's category and its infix parsing function.
-	infixFunctions map[string]parseInfixFunc
+	infixFunctions  map[string]parseInfixFunc
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // METHODS
 ////////////////////////////////////////////////////////////////////////////////
 
-// A method that parses all statements in a script.
-// Returns a program.
 func (p *Parser) ParseProgram() *ast.Program {
 	program := &ast.Program{}
 	program.Statements = []ast.Statement{}
@@ -79,8 +70,6 @@ func (p *Parser) ParseProgram() *ast.Program {
 	return program
 }
 
-// A method that parses a statement.
-// Returns a statement.
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.tok.Category {
 	case token.Let:
@@ -92,8 +81,6 @@ func (p *Parser) parseStatement() ast.Statement {
 	}
 }
 
-// A method that parses a let statement.
-// Returns a statement.
 func (p *Parser) parseLetStatement() *ast.LetStatement {
 	statement := &ast.LetStatement{LetToken: p.tok}
 	if !p.assertNextToken(token.Identifier) {
@@ -105,25 +92,24 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		return nil
 	}
 	p.GetNextToken()
-	for p.tok.Category != token.Semicolon {
+	p.GetNextToken()
+	statement.Expression = p.parseExpression(Lowest)
+	for p.nextTok.Category == token.Semicolon {
 		p.GetNextToken()
 	}
 	return statement
 }
 
-// A method that parses a return statement.
-// Returns a statement.
 func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	statement := &ast.ReturnStatement{Token: p.tok}
 	p.GetNextToken()
-	for p.tok.Category != token.Semicolon {
+	statement.Expression = p.parseExpression(Lowest)
+	for p.nextTok.Category == token.Semicolon {
 		p.GetNextToken()
 	}
 	return statement
 }
 
-// A method that parses an expression statement.
-// Returns a statement.
 func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 	statement := &ast.ExpressionStatement{Token: p.tok}
 	statement.Expression = p.parseExpression(Lowest)
@@ -133,8 +119,6 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 	return statement
 }
 
-// A method that parses a block statement.
-// Returns a statement.
 func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	block := &ast.BlockStatement{Token: p.tok}
 	block.Statements = []ast.Statement{}
@@ -149,8 +133,6 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	return block
 }
 
-// A method that parses an expression.
-// Returns an expression.
 func (p *Parser) parseExpression(precedence int) ast.Expression {
 	prefix := p.prefixFunctions[p.tok.Category]
 	if prefix == nil {
@@ -169,14 +151,10 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	return lhsExpression
 }
 
-// A method that parses an identifier.
-// Returns an expression.
 func (p *Parser) parseIdentifier() ast.Expression {
 	return &ast.Identifier{Token: p.tok, Value: p.tok.Code}
 }
 
-// A method that parses a prefix expression.
-// Returns an expression.
 func (p *Parser) parsePrefix() ast.Expression {
 	expression := &ast.PrefixExpression{
 		PrefixToken: p.tok,
@@ -187,8 +165,6 @@ func (p *Parser) parsePrefix() ast.Expression {
 	return expression
 }
 
-// A method that parses an infix expression.
-// Returns an expression.
 func (p *Parser) parseInfix(lhsExpression ast.Expression) ast.Expression {
 	expression := &ast.InfixExpression{
 		InfixToken:    p.tok,
@@ -201,65 +177,60 @@ func (p *Parser) parseInfix(lhsExpression ast.Expression) ast.Expression {
 	return expression
 }
 
-// A method that parses an integer.
-// Returns an expression.
 func (p *Parser) parseInteger() ast.Expression {
 	integer := &ast.Integer{Token: p.tok}
 	value, err := strconv.ParseInt(p.tok.Code, 0, 64)
 	if err != nil {
 		message := fmt.Sprintf("could not parse %q as integer", p.tok.Code)
-		p.errors = append(p.errors, message)
+		p.Errors = append(p.Errors, message)
 		return nil
 	}
 	integer.Value = value
 	return integer
 }
 
-// A method that parses a boolean.
-// Returns an expression.
 func (p *Parser) parseBoolean() ast.Expression {
 	return &ast.Boolean{Token: p.tok, Value: p.tok.Category == token.True}
 }
 
-// A method that parses a group.
-// Returns an expression.
 func (p *Parser) parseGroup() ast.Expression {
 	p.GetNextToken()
 	exp := p.parseExpression(Lowest)
 	if !p.assertNextToken(token.RightParenthesis) {
 		return nil
 	}
+	p.GetNextToken()
 	return exp
 }
 
-// A method that parses an if-else.
-// Returns an expression.
 func (p *Parser) parseIf() ast.Expression {
 	exp := &ast.IfExpression{IfToken: p.tok}
 	if !p.assertNextToken(token.LeftParenthesis) {
 		return nil
 	}
 	p.GetNextToken()
+	p.GetNextToken()
 	exp.Condition = p.parseExpression(Lowest)
 	if !p.assertNextToken(token.RightParenthesis) {
 		return nil
 	}
+	p.GetNextToken()
 	if !p.assertNextToken(token.LeftBrace) {
 		return nil
 	}
+	p.GetNextToken()
 	exp.Then = p.parseBlockStatement()
 	if p.nextTok.Category == token.Else {
 		p.GetNextToken()
 		if !p.assertNextToken(token.LeftBrace) {
 			return nil
 		}
+		p.GetNextToken()
 		exp.Else = p.parseBlockStatement()
 	}
 	return exp
 }
 
-// A method that parses a function.
-// Returns an expression.
 func (p *Parser) parseFunction() ast.Expression {
 	fn := &ast.Function{Token: p.tok}
 	if !p.assertNextToken(token.LeftParenthesis) {
@@ -267,15 +238,14 @@ func (p *Parser) parseFunction() ast.Expression {
 	}
 	p.GetNextToken()
 	fn.Parameters = p.parseFunctionParameters()
-	if !p.assertNextToken(token.RightParenthesis) {
+	if !p.assertNextToken(token.LeftBrace) {
 		return nil
 	}
+	p.GetNextToken()
 	fn.Body = p.parseBlockStatement()
 	return fn
 }
 
-// A method that parses a function's parameters.
-// Returns a slice of identifiers.
 func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 	ids := []*ast.Identifier{}
 	if p.nextTok.Category == token.RightParenthesis {
@@ -294,17 +264,41 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 	if !p.assertNextToken(token.RightParenthesis) {
 		return nil
 	}
+	p.GetNextToken()
 	return ids
 }
 
-// A method that advances the parser by one token.
+func (p *Parser) parseCall(fn ast.Expression) ast.Expression {
+	exp := &ast.CallExpression{Token: p.tok, Function: fn}
+	exp.Arguments = p.parseCallArguments()
+	return exp
+}
+
+func (p *Parser) parseCallArguments() []ast.Expression {
+	args := []ast.Expression{}
+	if p.nextTok.Category == token.RightParenthesis {
+		p.GetNextToken()
+		return args
+	}
+	p.GetNextToken()
+	args = append(args, p.parseExpression(Lowest))
+	for p.nextTok.Category == token.Comma {
+		p.GetNextToken()
+		p.GetNextToken()
+		args = append(args, p.parseExpression(Lowest))
+	}
+	if !p.assertNextToken(token.RightParenthesis) {
+		return nil
+	}
+	p.GetNextToken()
+	return args
+}
+
 func (p *Parser) GetNextToken() {
 	p.tok = p.nextTok
 	p.nextTok = p.lxr.GetNextToken()
 }
 
-// A method that checks if a category matches the next token's category.
-// Returns true or false.
 func (p *Parser) assertNextToken(category string) bool {
 	if p.nextTok.Category == category {
 		return true
@@ -313,8 +307,6 @@ func (p *Parser) assertNextToken(category string) bool {
 	return false
 }
 
-// A method that gets the precedence of the current token.
-// Returns a value.
 func (p *Parser) getPrecedence() int {
 	if precedence, ok := precedences[p.tok.Category]; ok {
 		return precedence
@@ -322,8 +314,6 @@ func (p *Parser) getPrecedence() int {
 	return Lowest
 }
 
-// A method that gets the precedence of the next token.
-// Returns a value.
 func (p *Parser) getNextPrecedence() int {
 	if precedence, ok := precedences[p.nextTok.Category]; ok {
 		return precedence
@@ -331,26 +321,22 @@ func (p *Parser) getNextPrecedence() int {
 	return Lowest
 }
 
-// A method that logs an unexpected token category error.
 func (p *Parser) appendCategoryError(category string) {
 	message := fmt.Sprintf("expected next token to be %s, got %s instead", category, p.nextTok.Category)
-	p.errors = append(p.errors, message)
+	p.Errors = append(p.Errors, message)
 }
 
-// A method that logs an unexpected prefix expression error.
 func (p *Parser) appendPrefixError(category string) {
 	message := fmt.Sprintf("no prefix parse function for %s found", category)
-	p.errors = append(p.errors, message)
+	p.Errors = append(p.Errors, message)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // FUNCTIONS
 ////////////////////////////////////////////////////////////////////////////////
 
-// A function that creates a new parser.
-// Returns a parser.
 func New(lxr *lexer.Lexer) *Parser {
-	prs := &Parser{lxr: lxr, errors: []string{}}
+	prs := &Parser{lxr: lxr, Errors: []string{}}
 	prs.GetNextToken()
 	prs.GetNextToken()
 	prs.prefixFunctions = make(map[string]parsePrefixFunc)
@@ -372,13 +358,10 @@ func New(lxr *lexer.Lexer) *Parser {
 	prs.infixFunctions[token.IsNotEqualTo] = prs.parseInfix
 	prs.infixFunctions[token.LessThan] = prs.parseInfix
 	prs.infixFunctions[token.GreaterThan] = prs.parseInfix
+	prs.infixFunctions[token.LeftParenthesis] = prs.parseCall
 	return prs
 }
 
-// A function that parses a prefix operator.
-// Returns an expression.
 type parsePrefixFunc func() ast.Expression
 
-// A function that parses a infix operator.
-// Returns an expression.
 type parseInfixFunc func(lhsExpression ast.Expression) ast.Expression

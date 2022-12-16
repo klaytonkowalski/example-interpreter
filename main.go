@@ -1,10 +1,11 @@
 package main
 
 import (
-	"example-interpreter/repl"
 	"fmt"
 	"os"
 	"os/user"
+
+	"github.com/klaytonkowalski/example-interpreter/repl"
 )
 
 func main() {

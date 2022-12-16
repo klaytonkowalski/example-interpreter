@@ -4,7 +4,6 @@ package token
 // VARIABLES
 ////////////////////////////////////////////////////////////////////////////////
 
-// A possible value of a token's category.
 const (
 	Illegal          = "Illegal"
 	End              = "End"
@@ -35,7 +34,6 @@ const (
 	IsNotEqualTo     = "IsNotEqualTo"
 )
 
-// A map between a token's code and its corresponding category, if that category is a keyword.
 var keywords = map[string]string{
 	"fn":     Function,
 	"let":    Let,
@@ -50,20 +48,15 @@ var keywords = map[string]string{
 // STRUCTURES
 ////////////////////////////////////////////////////////////////////////////////
 
-// A struct that is a semantically cohesive chunk of code in a script.
 type Token struct {
-	// A string that indicates semantic significance.
 	Category string
-	// A string that is the extracted code from a script.
-	Code string
+	Code     string
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // FUNCTIONS
 ////////////////////////////////////////////////////////////////////////////////
 
-// A function that matches a token's code to a keyword or identifier category.
-// Returns a category.
 func MatchCodeToKeywordOrIdentifier(code string) string {
 	if category, ok := keywords[code]; ok {
 		return category

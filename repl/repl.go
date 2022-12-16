@@ -6,24 +6,23 @@ package repl
 
 import (
 	"bufio"
-	"example-interpreter/lexer"
-	"example-interpreter/token"
 	"fmt"
 	"io"
+
+	"github.com/klaytonkowalski/example-interpreter/lexer"
+	"github.com/klaytonkowalski/example-interpreter/parser"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // VARIABLES
 ////////////////////////////////////////////////////////////////////////////////
 
-// A constant string that defines the REPL prompt.
 const prompt = ">> "
 
 ////////////////////////////////////////////////////////////////////////////////
 // FUNCTIONS
 ////////////////////////////////////////////////////////////////////////////////
 
-// A function that starts and loops the REPL until the program is terminated.
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 	for {
@@ -34,8 +33,19 @@ func Start(in io.Reader, out io.Writer) {
 		}
 		line := scanner.Text()
 		lxr := lexer.New(line)
-		for tok := lxr.GetNextToken(); tok.Category != token.End; tok = lxr.GetNextToken() {
-
+		prs := parser.New(lxr)
+		program := prs.ParseProgram()
+		if len(prs.Errors) > 0 {
+			printParserErrors(out, prs.Errors)
+			continue
 		}
+		io.WriteString(out, program.GetDebugString())
+		io.WriteString(out, "\n")
+	}
+}
+
+func printParserErrors(out io.Writer, errors []string) {
+	for _, message := range errors {
+		io.WriteString(out, "\t"+message+"\n")
 	}
 }
