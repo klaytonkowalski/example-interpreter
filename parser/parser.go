@@ -133,6 +133,22 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 	return statement
 }
 
+// A method that parses a block statement.
+// Returns a statement.
+func (p *Parser) parseBlockStatement() *ast.BlockStatement {
+	block := &ast.BlockStatement{Token: p.tok}
+	block.Statements = []ast.Statement{}
+	p.GetNextToken()
+	for p.tok.Category != token.RightBrace && p.tok.Category != token.End {
+		statement := p.parseStatement()
+		if statement != nil {
+			block.Statements = append(block.Statements, statement)
+		}
+		p.GetNextToken()
+	}
+	return block
+}
+
 // A method that parses an expression.
 // Returns an expression.
 func (p *Parser) parseExpression(precedence int) ast.Expression {
@@ -186,7 +202,7 @@ func (p *Parser) parseInfix(lhsExpression ast.Expression) ast.Expression {
 }
 
 // A method that parses an integer.
-// Returns an integer.
+// Returns an expression.
 func (p *Parser) parseInteger() ast.Expression {
 	integer := &ast.Integer{Token: p.tok}
 	value, err := strconv.ParseInt(p.tok.Code, 0, 64)
@@ -197,6 +213,88 @@ func (p *Parser) parseInteger() ast.Expression {
 	}
 	integer.Value = value
 	return integer
+}
+
+// A method that parses a boolean.
+// Returns an expression.
+func (p *Parser) parseBoolean() ast.Expression {
+	return &ast.Boolean{Token: p.tok, Value: p.tok.Category == token.True}
+}
+
+// A method that parses a group.
+// Returns an expression.
+func (p *Parser) parseGroup() ast.Expression {
+	p.GetNextToken()
+	exp := p.parseExpression(Lowest)
+	if !p.assertNextToken(token.RightParenthesis) {
+		return nil
+	}
+	return exp
+}
+
+// A method that parses an if-else.
+// Returns an expression.
+func (p *Parser) parseIf() ast.Expression {
+	exp := &ast.IfExpression{IfToken: p.tok}
+	if !p.assertNextToken(token.LeftParenthesis) {
+		return nil
+	}
+	p.GetNextToken()
+	exp.Condition = p.parseExpression(Lowest)
+	if !p.assertNextToken(token.RightParenthesis) {
+		return nil
+	}
+	if !p.assertNextToken(token.LeftBrace) {
+		return nil
+	}
+	exp.Then = p.parseBlockStatement()
+	if p.nextTok.Category == token.Else {
+		p.GetNextToken()
+		if !p.assertNextToken(token.LeftBrace) {
+			return nil
+		}
+		exp.Else = p.parseBlockStatement()
+	}
+	return exp
+}
+
+// A method that parses a function.
+// Returns an expression.
+func (p *Parser) parseFunction() ast.Expression {
+	fn := &ast.Function{Token: p.tok}
+	if !p.assertNextToken(token.LeftParenthesis) {
+		return nil
+	}
+	p.GetNextToken()
+	fn.Parameters = p.parseFunctionParameters()
+	if !p.assertNextToken(token.RightParenthesis) {
+		return nil
+	}
+	fn.Body = p.parseBlockStatement()
+	return fn
+}
+
+// A method that parses a function's parameters.
+// Returns a slice of identifiers.
+func (p *Parser) parseFunctionParameters() []*ast.Identifier {
+	ids := []*ast.Identifier{}
+	if p.nextTok.Category == token.RightParenthesis {
+		p.GetNextToken()
+		return ids
+	}
+	p.GetNextToken()
+	id := &ast.Identifier{Token: p.tok, Value: p.tok.Code}
+	ids = append(ids, id)
+	for p.nextTok.Category == token.Comma {
+		p.GetNextToken()
+		p.GetNextToken()
+		id := &ast.Identifier{Token: p.tok, Value: p.tok.Code}
+		ids = append(ids, id)
+	}
+	if !p.assertNextToken(token.RightParenthesis) {
+		return nil
+	}
+	return ids
 }
 
 // A method that advances the parser by one token.
@@ -260,6 +358,11 @@ func New(lxr *lexer.Lexer) *Parser {
 	prs.prefixFunctions[token.Integer] = prs.parseInteger
 	prs.prefixFunctions[token.Bang] = prs.parsePrefix
 	prs.prefixFunctions[token.Minus] = prs.parsePrefix
+	prs.prefixFunctions[token.True] = prs.parseBoolean
+	prs.prefixFunctions[token.False] = prs.parseBoolean
+	prs.prefixFunctions[token.LeftParenthesis] = prs.parseGroup
+	prs.prefixFunctions[token.If] = prs.parseIf
+	prs.prefixFunctions[token.Function] = prs.parseFunction
 	prs.infixFunctions = make(map[string]parseInfixFunc)
 	prs.infixFunctions[token.Plus] = prs.parseInfix
 	prs.infixFunctions[token.Minus] = prs.parseInfix
