@@ -14,6 +14,7 @@ const (
 	ObjectInteger = "Integer"
 	ObjectBoolean = "Boolean"
 	ObjectNull    = "Null"
+	ObjectReturn  = "Return"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -38,6 +39,10 @@ type Boolean struct {
 }
 
 type Null struct{}
+
+type Return struct {
+	Value Object
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // METHODS
@@ -65,6 +70,14 @@ func (n *Null) GetType() string {
 
 func (n *Null) GetDebugString() string {
 	return "null"
+}
+
+func (r *Return) GetType() string {
+	return ObjectReturn
+}
+
+func (r *Return) GetDebugString() string {
+	return r.Value.GetDebugString()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
