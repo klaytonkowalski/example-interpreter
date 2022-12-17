@@ -11,6 +11,7 @@ import (
 
 	"github.com/klaytonkowalski/example-interpreter/evaluator"
 	"github.com/klaytonkowalski/example-interpreter/lexer"
+	"github.com/klaytonkowalski/example-interpreter/object"
 	"github.com/klaytonkowalski/example-interpreter/parser"
 )
 
@@ -26,6 +27,7 @@ const prompt = ">> "
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
+	env := object.CreateEnvironment()
 	for {
 		fmt.Fprintf(out, prompt)
 		scan := scanner.Scan()
@@ -40,7 +42,7 @@ func Start(in io.Reader, out io.Writer) {
 			printParserErrors(out, prs.Errors)
 			continue
 		}
-		evaluated := evaluator.Evaluate(program)
+		evaluated := evaluator.Evaluate(program, env)
 		if evaluated != nil {
 			io.WriteString(out, evaluated.GetDebugString())
 			io.WriteString(out, "\n")

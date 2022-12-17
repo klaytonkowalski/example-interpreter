@@ -4,17 +4,25 @@ package object
 // DEPENDENCIES
 ////////////////////////////////////////////////////////////////////////////////
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+	"strings"
+
+	"github.com/klaytonkowalski/example-interpreter/ast"
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // VARIABLES
 ////////////////////////////////////////////////////////////////////////////////
 
 const (
-	ObjectInteger = "Integer"
-	ObjectBoolean = "Boolean"
-	ObjectNull    = "Null"
-	ObjectReturn  = "Return"
+	ObjectInteger  = "Integer"
+	ObjectBoolean  = "Boolean"
+	ObjectNull     = "Null"
+	ObjectReturn   = "Return"
+	ObjectError    = "Error"
+	ObjectFunction = "Function"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -42,6 +50,16 @@ type Null struct{}
 
 type Return struct {
 	Value Object
+}
+
+type Error struct {
+	Message string
+}
+
+type Function struct {
+	Parameters  []*ast.Identifier
+	Body        *ast.BlockStatement
+	Environment *Environment
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -78,6 +96,32 @@ func (r *Return) GetType() string {
 
 func (r *Return) GetDebugString() string {
 	return r.Value.GetDebugString()
+}
+
+func (e *Error) GetType() string {
+	return ObjectError
+}
+
+func (e *Error) GetDebugString() string {
+	return "Error: " + e.Message
+}
+
+func (f *Function) GetType() string {
+	return ObjectFunction
+}
+
+func (f *Function) GetDebugString() string {
+	var out bytes.Buffer
+	params := []string{}
+	for _, param := range f.Parameters {
+		params = append(params, param.GetDebugString())
+	}
+	out.WriteString("fn(")
+	out.WriteString(strings.Join(params, ","))
+	out.WriteString(") {\n")
+	out.WriteString(f.Body.GetDebugString())
+	out.WriteString("\n}")
+	return out.String()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
