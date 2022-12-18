@@ -83,6 +83,8 @@ func Evaluate(node ast.Node, env *object.Environment) object.Object {
 			return args[0]
 		}
 		return applyFunction(function, args)
+	case *ast.String:
+		return &object.String{Value: node.Value}
 	}
 	return nil
 }
@@ -160,6 +162,8 @@ func evaluateInfixExpression(operator string, lhsObject, rhsObject object.Object
 		return convertBoolToBoolean(lhsObject != rhsObject)
 	case lhsObject.GetType() != rhsObject.GetType():
 		return createError("Type mismatch: %s %s %s", lhsObject.GetType(), operator, rhsObject.GetType())
+	case lhsObject.GetType() == object.ObjectString && rhsObject.GetType() == object.ObjectString:
+		return evaluateStringExpression(operator, lhsObject, rhsObject)
 	default:
 		return createError("Unknown operator: %s %s %s", lhsObject.GetType(), operator, rhsObject.GetType())
 	}
@@ -205,11 +209,13 @@ func evaluateIfExpression(ie *ast.IfExpression, env *object.Environment) object.
 }
 
 func evaluateIdentifier(node *ast.Identifier, env *object.Environment) object.Object {
-	value, ok := env.GetObject(node.Value)
-	if !ok {
-		return createError("Identifier not found: %s", node.Value)
+	if value, ok := env.GetObject(node.Value); ok {
+		return value
 	}
-	return value
+	if native, ok := natives[node.Value]; ok {
+		return native
+	}
+	return createError("Identifier not found: %s", node.Value)
 }
 
 func evaluateExpressions(exps []ast.Expression, env *object.Environment) []object.Object {
@@ -224,14 +230,26 @@ func evaluateExpressions(exps []ast.Expression, env *object.Environment) []objec
 	return result
 }
 
+func evaluateStringExpression(operator string, lhsObject, rhsObject object.Object) object.Object {
+	if operator != "+" {
+		return createError("Unknown operator: %s %s %s", lhsObject.GetType(), operator, rhsObject.GetType())
+	}
+	leftVal := lhsObject.(*object.String).Value
+	rightVal := rhsObject.(*object.String).Value
+	return &object.String{Value: leftVal + rightVal}
+}
+
 func applyFunction(fn object.Object, args []object.Object) object.Object {
-	function, ok := fn.(*object.Function)
-	if !ok {
+	switch fn := fn.(type) {
+	case *object.Function:
+		extendedEnv := extendFunctionEnvironment(fn, args)
+		evaluated := Evaluate(fn.Body, extendedEnv)
+		return unwrapReturnValue(evaluated)
+	case *object.Native:
+		return fn.Function(args...)
+	default:
 		return createError("Not a function: %s", fn.GetType())
 	}
-	extendedEnv := extendFunctionEnvironment(function, args)
-	evaluated := Evaluate(function.Body, extendedEnv)
-	return unwrapReturnValue(evaluated)
 }
 
 func extendFunctionEnvironment(fn *object.Function, args []object.Object) *object.Environment {

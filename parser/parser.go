@@ -294,6 +294,10 @@ func (p *Parser) parseCallArguments() []ast.Expression {
 	return args
 }
 
+func (p *Parser) parseString() ast.Expression {
+	return &ast.String{Token: p.tok, Value: p.tok.Code}
+}
+
 func (p *Parser) GetNextToken() {
 	p.tok = p.nextTok
 	p.nextTok = p.lxr.GetNextToken()
@@ -349,6 +353,7 @@ func New(lxr *lexer.Lexer) *Parser {
 	prs.prefixFunctions[token.LeftParenthesis] = prs.parseGroup
 	prs.prefixFunctions[token.If] = prs.parseIf
 	prs.prefixFunctions[token.Function] = prs.parseFunction
+	prs.prefixFunctions[token.String] = prs.parseString
 	prs.infixFunctions = make(map[string]parseInfixFunc)
 	prs.infixFunctions[token.Plus] = prs.parseInfix
 	prs.infixFunctions[token.Minus] = prs.parseInfix

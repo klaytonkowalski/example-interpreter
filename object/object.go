@@ -17,12 +17,14 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 
 const (
-	ObjectInteger  = "Integer"
-	ObjectBoolean  = "Boolean"
-	ObjectNull     = "Null"
-	ObjectReturn   = "Return"
-	ObjectError    = "Error"
-	ObjectFunction = "Function"
+	ObjectInteger        = "Integer"
+	ObjectBoolean        = "Boolean"
+	ObjectNull           = "Null"
+	ObjectReturn         = "Return"
+	ObjectError          = "Error"
+	ObjectFunction       = "Function"
+	ObjectString         = "String"
+	ObjectNativeFunction = "Native Function"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -60,6 +62,14 @@ type Function struct {
 	Parameters  []*ast.Identifier
 	Body        *ast.BlockStatement
 	Environment *Environment
+}
+
+type String struct {
+	Value string
+}
+
+type Native struct {
+	Function NativeFn
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -124,6 +134,24 @@ func (f *Function) GetDebugString() string {
 	return out.String()
 }
 
+func (s *String) GetType() string {
+	return ObjectString
+}
+
+func (s *String) GetDebugString() string {
+	return s.Value
+}
+
+func (n *Native) GetType() string {
+	return ObjectNativeFunction
+}
+
+func (n *Native) GetDebugString() string {
+	return "native function"
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // FUNCTIONS
 ////////////////////////////////////////////////////////////////////////////////
+
+type NativeFn func(args ...Object) Object

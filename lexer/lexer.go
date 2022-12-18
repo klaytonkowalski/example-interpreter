@@ -81,6 +81,9 @@ func (l *Lexer) GetNextToken() token.Token {
 		tok = createNewToken(token.LessThan, l.character)
 	case '>':
 		tok = createNewToken(token.GreaterThan, l.character)
+	case '"':
+		tok.Category = token.String
+		tok.Code = l.readString()
 	case 0:
 		tok.Category = token.End
 	default:
@@ -119,6 +122,17 @@ func (l *Lexer) readInteger() string {
 	startPosition := l.position
 	for isDigit(l.character) {
 		l.readNextCharacter()
+	}
+	return l.script[startPosition:l.position]
+}
+
+func (l *Lexer) readString() string {
+	startPosition := l.position + 1
+	for {
+		l.readNextCharacter()
+		if l.character == '"' || l.character == 0 {
+			break
+		}
 	}
 	return l.script[startPosition:l.position]
 }

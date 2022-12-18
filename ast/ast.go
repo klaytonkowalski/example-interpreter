@@ -104,6 +104,11 @@ type Function struct {
 	Body       *BlockStatement
 }
 
+type String struct {
+	Token token.Token
+	Value string
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // METHODS
 ////////////////////////////////////////////////////////////////////////////////
@@ -278,4 +283,12 @@ func (f *Function) GetDebugString() string {
 	out.WriteString(")")
 	out.WriteString(f.Body.GetDebugString())
 	return out.String()
+}
+
+func (s *String) GetCode() string {
+	return s.Token.Code
+}
+
+func (s *String) GetDebugString() string {
+	return s.Token.Code
 }

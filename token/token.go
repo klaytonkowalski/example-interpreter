@@ -32,6 +32,7 @@ const (
 	Return           = "Return"
 	IsEqualTo        = "IsEqualTo"
 	IsNotEqualTo     = "IsNotEqualTo"
+	String           = "String"
 )
 
 var keywords = map[string]string{
