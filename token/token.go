@@ -33,6 +33,8 @@ const (
 	IsEqualTo        = "IsEqualTo"
 	IsNotEqualTo     = "IsNotEqualTo"
 	String           = "String"
+	LeftBracket      = "LeftBracket"
+	RightBracket     = "RightBracket"
 )
 
 var keywords = map[string]string{

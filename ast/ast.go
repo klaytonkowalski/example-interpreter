@@ -109,6 +109,17 @@ type String struct {
 	Value string
 }
 
+type Array struct {
+	Token    token.Token
+	Elements []Expression
+}
+
+type Index struct {
+	Token                token.Token
+	IdentifierExpression Expression
+	IndexExpression      Expression
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // METHODS
 ////////////////////////////////////////////////////////////////////////////////
@@ -291,4 +302,34 @@ func (s *String) GetCode() string {
 
 func (s *String) GetDebugString() string {
 	return s.Token.Code
+}
+
+func (a *Array) GetCode() string {
+	return a.Token.Code
+}
+
+func (a *Array) GetDebugString() string {
+	var out bytes.Buffer
+	elements := []string{}
+	for _, element := range a.Elements {
+		elements = append(elements, element.GetDebugString())
+	}
+	out.WriteString("[")
+	out.WriteString(strings.Join(elements, ","))
+	out.WriteString("]")
+	return out.String()
+}
+
+func (i *Index) GetCode() string {
+	return i.Token.Code
+}
+
+func (i *Index) GetDebugString() string {
+	var out bytes.Buffer
+	out.WriteString("(")
+	out.WriteString(i.IdentifierExpression.GetDebugString())
+	out.WriteString("[")
+	out.WriteString(i.IndexExpression.GetDebugString())
+	out.WriteString("])")
+	return out.String()
 }

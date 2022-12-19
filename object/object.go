@@ -25,6 +25,7 @@ const (
 	ObjectFunction       = "Function"
 	ObjectString         = "String"
 	ObjectNativeFunction = "Native Function"
+	ObjectArray          = "Array"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -70,6 +71,10 @@ type String struct {
 
 type Native struct {
 	Function NativeFn
+}
+
+type Array struct {
+	Elements []Object
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -148,6 +153,22 @@ func (n *Native) GetType() string {
 
 func (n *Native) GetDebugString() string {
 	return "native function"
+}
+
+func (a *Array) GetType() string {
+	return ObjectArray
+}
+
+func (a *Array) GetDebugString() string {
+	var out bytes.Buffer
+	elems := []string{}
+	for _, elem := range a.Elements {
+		elems = append(elems, elem.GetDebugString())
+	}
+	out.WriteString("[")
+	out.WriteString(strings.Join(elems, ","))
+	out.WriteString("]")
+	return out.String()
 }
 
 ////////////////////////////////////////////////////////////////////////////////

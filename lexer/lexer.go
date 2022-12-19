@@ -84,6 +84,10 @@ func (l *Lexer) GetNextToken() token.Token {
 	case '"':
 		tok.Category = token.String
 		tok.Code = l.readString()
+	case '[':
+		tok = createNewToken(token.LeftBracket, l.character)
+	case ']':
+		tok = createNewToken(token.RightBracket, l.character)
 	case 0:
 		tok.Category = token.End
 	default:

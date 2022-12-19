@@ -26,6 +26,7 @@ const (
 	Product
 	Prefix
 	Call
+	Index
 )
 
 var precedences = map[string]int{
@@ -38,6 +39,7 @@ var precedences = map[string]int{
 	token.ForwardSlash:    Product,
 	token.Asterisk:        Product,
 	token.LeftParenthesis: Call,
+	token.LeftBracket:     Index,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -270,32 +272,49 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 
 func (p *Parser) parseCall(fn ast.Expression) ast.Expression {
 	exp := &ast.CallExpression{Token: p.tok, Function: fn}
-	exp.Arguments = p.parseCallArguments()
+	exp.Arguments = p.parseExpressionList(token.RightParenthesis)
 	return exp
-}
-
-func (p *Parser) parseCallArguments() []ast.Expression {
-	args := []ast.Expression{}
-	if p.nextTok.Category == token.RightParenthesis {
-		p.GetNextToken()
-		return args
-	}
-	p.GetNextToken()
-	args = append(args, p.parseExpression(Lowest))
-	for p.nextTok.Category == token.Comma {
-		p.GetNextToken()
-		p.GetNextToken()
-		args = append(args, p.parseExpression(Lowest))
-	}
-	if !p.assertNextToken(token.RightParenthesis) {
-		return nil
-	}
-	p.GetNextToken()
-	return args
 }
 
 func (p *Parser) parseString() ast.Expression {
 	return &ast.String{Token: p.tok, Value: p.tok.Code}
+}
+
+func (p *Parser) parseArray() ast.Expression {
+	array := &ast.Array{Token: p.tok}
+	array.Elements = p.parseExpressionList(token.RightBracket)
+	return array
+}
+
+func (p *Parser) parseExpressionList(closingCategory string) []ast.Expression {
+	list := []ast.Expression{}
+	if p.nextTok.Category == closingCategory {
+		p.GetNextToken()
+		return list
+	}
+	p.GetNextToken()
+	list = append(list, p.parseExpression(Lowest))
+	for p.nextTok.Category == token.Comma {
+		p.GetNextToken()
+		p.GetNextToken()
+		list = append(list, p.parseExpression(Lowest))
+	}
+	if !p.assertNextToken(closingCategory) {
+		return nil
+	}
+	p.GetNextToken()
+	return list
+}
+
+func (p *Parser) parseIndex(identifierExp ast.Expression) ast.Expression {
+	exp := &ast.Index{Token: p.tok, IdentifierExpression: identifierExp}
+	p.GetNextToken()
+	exp.IndexExpression = p.parseExpression(Lowest)
+	if !p.assertNextToken(token.RightBracket) {
+		return nil
+	}
+	p.GetNextToken()
+	return exp
 }
 
 func (p *Parser) GetNextToken() {
@@ -354,6 +373,7 @@ func New(lxr *lexer.Lexer) *Parser {
 	prs.prefixFunctions[token.If] = prs.parseIf
 	prs.prefixFunctions[token.Function] = prs.parseFunction
 	prs.prefixFunctions[token.String] = prs.parseString
+	prs.prefixFunctions[token.LeftBracket] = prs.parseArray
 	prs.infixFunctions = make(map[string]parseInfixFunc)
 	prs.infixFunctions[token.Plus] = prs.parseInfix
 	prs.infixFunctions[token.Minus] = prs.parseInfix
@@ -364,6 +384,7 @@ func New(lxr *lexer.Lexer) *Parser {
 	prs.infixFunctions[token.LessThan] = prs.parseInfix
 	prs.infixFunctions[token.GreaterThan] = prs.parseInfix
 	prs.infixFunctions[token.LeftParenthesis] = prs.parseCall
+	prs.infixFunctions[token.LeftBracket] = prs.parseIndex
 	return prs
 }
 

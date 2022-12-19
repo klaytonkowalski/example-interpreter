@@ -85,6 +85,22 @@ func Evaluate(node ast.Node, env *object.Environment) object.Object {
 		return applyFunction(function, args)
 	case *ast.String:
 		return &object.String{Value: node.Value}
+	case *ast.Array:
+		elements := evaluateExpressions(node.Elements, env)
+		if len(elements) == 1 && isError(elements[0]) {
+			return elements[0]
+		}
+		return &object.Array{Elements: elements}
+	case *ast.Index:
+		identifier := Evaluate(node.IdentifierExpression, env)
+		if isError(identifier) {
+			return identifier
+		}
+		index := Evaluate(node.IndexExpression, env)
+		if isError(index) {
+			return index
+		}
+		return evaluateIndexExpression(identifier, index)
 	}
 	return nil
 }
@@ -237,6 +253,25 @@ func evaluateStringExpression(operator string, lhsObject, rhsObject object.Objec
 	leftVal := lhsObject.(*object.String).Value
 	rightVal := rhsObject.(*object.String).Value
 	return &object.String{Value: leftVal + rightVal}
+}
+
+func evaluateIndexExpression(identifier, index object.Object) object.Object {
+	switch {
+	case identifier.GetType() == object.ObjectArray && index.GetType() == object.ObjectInteger:
+		return evaluateArrayIndexExpression(identifier, index)
+	default:
+		return createError("Index operator not supported: %s", identifier.GetType())
+	}
+}
+
+func evaluateArrayIndexExpression(identifier, index object.Object) object.Object {
+	array := identifier.(*object.Array)
+	indexValue := index.(*object.Integer).Value
+	max := int64(len(array.Elements) - 1)
+	if indexValue < 0 || indexValue > max {
+		return Null
+	}
+	return array.Elements[indexValue]
 }
 
 func applyFunction(fn object.Object, args []object.Object) object.Object {
