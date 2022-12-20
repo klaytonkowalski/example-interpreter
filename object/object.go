@@ -7,6 +7,7 @@ package object
 import (
 	"bytes"
 	"fmt"
+	"hash/fnv"
 	"strings"
 
 	"github.com/klaytonkowalski/example-interpreter/ast"
@@ -26,6 +27,7 @@ const (
 	ObjectString         = "String"
 	ObjectNativeFunction = "Native Function"
 	ObjectArray          = "Array"
+	ObjectHash           = "Hash"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -35,6 +37,10 @@ const (
 type Object interface {
 	GetType() string
 	GetDebugString() string
+}
+
+type Hashable interface {
+	GetHashKey() HashKey
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -77,6 +83,20 @@ type Array struct {
 	Elements []Object
 }
 
+type HashKey struct {
+	Type  string
+	Value uint64
+}
+
+type HashPair struct {
+	Key   Object
+	Value Object
+}
+
+type Hash struct {
+	Pairs map[HashKey]HashPair
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // METHODS
 ////////////////////////////////////////////////////////////////////////////////
@@ -89,12 +109,26 @@ func (i *Integer) GetDebugString() string {
 	return fmt.Sprintf("%d", i.Value)
 }
 
+func (i *Integer) GetHashKey() HashKey {
+	return HashKey{Type: i.GetType(), Value: uint64(i.Value)}
+}
+
 func (b *Boolean) GetType() string {
 	return ObjectBoolean
 }
 
 func (b *Boolean) GetDebugString() string {
 	return fmt.Sprintf("%t", b.Value)
+}
+
+func (b *Boolean) GetHashKey() HashKey {
+	var value uint64
+	if b.Value {
+		value = 1
+	} else {
+		value = 0
+	}
+	return HashKey{Type: b.GetType(), Value: value}
 }
 
 func (n *Null) GetType() string {
@@ -147,6 +181,12 @@ func (s *String) GetDebugString() string {
 	return s.Value
 }
 
+func (s *String) GetHashKey() HashKey {
+	h := fnv.New64a()
+	h.Write([]byte(s.Value))
+	return HashKey{Type: s.GetType(), Value: h.Sum64()}
+}
+
 func (n *Native) GetType() string {
 	return ObjectNativeFunction
 }
@@ -168,6 +208,22 @@ func (a *Array) GetDebugString() string {
 	out.WriteString("[")
 	out.WriteString(strings.Join(elems, ","))
 	out.WriteString("]")
+	return out.String()
+}
+
+func (h *Hash) GetType() string {
+	return ObjectHash
+}
+
+func (h *Hash) GetDebugString() string {
+	var out bytes.Buffer
+	pairs := []string{}
+	for _, pair := range h.Pairs {
+		pairs = append(pairs, fmt.Sprintf("%s: %s", pair.Key.GetDebugString(), pair.Value.GetDebugString()))
+	}
+	out.WriteString("{")
+	out.WriteString(strings.Join(pairs, ","))
+	out.WriteString("}")
 	return out.String()
 }
 

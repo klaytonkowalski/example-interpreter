@@ -35,6 +35,7 @@ const (
 	String           = "String"
 	LeftBracket      = "LeftBracket"
 	RightBracket     = "RightBracket"
+	Colon            = "Colon"
 )
 
 var keywords = map[string]string{

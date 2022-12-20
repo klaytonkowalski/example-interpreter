@@ -1,6 +1,10 @@
 package evaluator
 
-import "github.com/klaytonkowalski/example-interpreter/object"
+import (
+	"fmt"
+
+	"github.com/klaytonkowalski/example-interpreter/object"
+)
 
 var natives = map[string]*object.Native{
 	"len": {
@@ -80,6 +84,14 @@ var natives = map[string]*object.Native{
 			copy(newElements, array.Elements)
 			newElements[length] = args[1]
 			return &object.Array{Elements: newElements}
+		},
+	},
+	"puts": {
+		Function: func(args ...object.Object) object.Object {
+			for _, arg := range args {
+				fmt.Println(arg.GetDebugString())
+			}
+			return Null
 		},
 	},
 }

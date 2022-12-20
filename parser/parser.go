@@ -317,6 +317,33 @@ func (p *Parser) parseIndex(identifierExp ast.Expression) ast.Expression {
 	return exp
 }
 
+func (p *Parser) parseHash() ast.Expression {
+	hash := &ast.Hash{Token: p.tok}
+	hash.Pairs = make(map[ast.Expression]ast.Expression)
+	for p.nextTok.Category != token.RightBrace {
+		p.GetNextToken()
+		key := p.parseExpression(Lowest)
+		if !p.assertNextToken(token.Colon) {
+			return nil
+		}
+		p.GetNextToken()
+		p.GetNextToken()
+		value := p.parseExpression(Lowest)
+		hash.Pairs[key] = value
+		if p.nextTok.Category != token.RightBrace {
+			if !p.assertNextToken(token.Comma) {
+				return nil
+			}
+			p.GetNextToken()
+		}
+	}
+	if !p.assertNextToken(token.RightBrace) {
+		return nil
+	}
+	p.GetNextToken()
+	return hash
+}
+
 func (p *Parser) GetNextToken() {
 	p.tok = p.nextTok
 	p.nextTok = p.lxr.GetNextToken()
@@ -374,6 +401,7 @@ func New(lxr *lexer.Lexer) *Parser {
 	prs.prefixFunctions[token.Function] = prs.parseFunction
 	prs.prefixFunctions[token.String] = prs.parseString
 	prs.prefixFunctions[token.LeftBracket] = prs.parseArray
+	prs.prefixFunctions[token.LeftBrace] = prs.parseHash
 	prs.infixFunctions = make(map[string]parseInfixFunc)
 	prs.infixFunctions[token.Plus] = prs.parseInfix
 	prs.infixFunctions[token.Minus] = prs.parseInfix

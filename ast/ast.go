@@ -120,6 +120,11 @@ type Index struct {
 	IndexExpression      Expression
 }
 
+type Hash struct {
+	Token token.Token
+	Pairs map[Expression]Expression
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // METHODS
 ////////////////////////////////////////////////////////////////////////////////
@@ -331,5 +336,21 @@ func (i *Index) GetDebugString() string {
 	out.WriteString("[")
 	out.WriteString(i.IndexExpression.GetDebugString())
 	out.WriteString("])")
+	return out.String()
+}
+
+func (h *Hash) GetCode() string {
+	return h.Token.Code
+}
+
+func (h *Hash) GetDebugString() string {
+	var out bytes.Buffer
+	pairs := []string{}
+	for key, value := range h.Pairs {
+		pairs = append(pairs, key.GetDebugString()+":"+value.GetDebugString())
+	}
+	out.WriteString("{")
+	out.WriteString(strings.Join(pairs, ","))
+	out.WriteString("}")
 	return out.String()
 }
